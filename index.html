@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bulletproof Algo — Build a Real Trading Bot on Alpaca</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#11161f; --panel2:#1a212d; --border:#22293a;
+    --text:#e6edf3; --muted:#8b949e; --accent:#3fb950; --accent2:#58a6ff;
+    --warn:#f0883e; --red:#f85149;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--text);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Inter","SF Pro Display",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .container{max-width:980px;margin:0 auto;padding:0 24px}
+  .narrow{max-width:760px;margin:0 auto;padding:0 24px}
+  nav{padding:18px 0;border-bottom:1px solid var(--border)}
+  nav .row{display:flex;justify-content:space-between;align-items:center}
+  .brand{font-weight:700;letter-spacing:-0.02em}
+  .brand .dot{color:var(--accent)}
+  nav a{color:var(--muted);text-decoration:none;font-size:14px}
+
+  /* Hero */
+  .hero{padding:80px 0 60px;text-align:center}
+  .pill{
+    display:inline-block;padding:6px 14px;border:1px solid var(--border);
+    border-radius:999px;font-size:12px;color:var(--muted);
+    background:var(--panel);margin-bottom:24px;letter-spacing:0.02em;
+  }
+  .pill .live-dot{
+    display:inline-block;width:6px;height:6px;background:var(--accent);
+    border-radius:50%;margin-right:6px;box-shadow:0 0 6px var(--accent);
+    animation:pulse 2s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  h1{
+    font-size:56px;line-height:1.05;letter-spacing:-0.03em;font-weight:800;
+    margin-bottom:24px;
+  }
+  h1 .strike{text-decoration:line-through;color:var(--muted);font-weight:400}
+  h1 .accent{color:var(--accent)}
+  .sub{font-size:20px;color:var(--muted);max-width:680px;margin:0 auto 36px}
+  .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:36px}
+  .btn{
+    display:inline-block;padding:16px 28px;border-radius:8px;text-decoration:none;
+    font-weight:600;font-size:16px;transition:all .15s;border:1px solid transparent;
+  }
+  .btn-primary{background:var(--accent);color:#0a0e14}
+  .btn-primary:hover{background:#4cc55b;transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--text);border-color:var(--border)}
+  .btn-ghost:hover{background:var(--panel)}
+  .price-row{font-size:14px;color:var(--muted)}
+  .price-row .strike{text-decoration:line-through}
+  .price-row .now{color:var(--text);font-weight:600}
+
+  /* Section base */
+  section{padding:80px 0;border-top:1px solid var(--border)}
+  .label{
+    font-size:12px;text-transform:uppercase;letter-spacing:0.12em;
+    color:var(--accent);font-weight:700;margin-bottom:14px;
+  }
+  h2{font-size:38px;line-height:1.15;letter-spacing:-0.02em;font-weight:800;margin-bottom:18px}
+  h3{font-size:22px;font-weight:700;margin-bottom:10px}
+  p.lead{font-size:18px;color:var(--muted);max-width:680px}
+
+  /* Problem section */
+  .problem-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:40px}
+  .problem-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:24px;
+  }
+  .problem-card .x{color:var(--red);font-size:22px;line-height:1;margin-bottom:8px}
+  .problem-card h3{font-size:16px;margin-bottom:6px}
+  .problem-card p{color:var(--muted);font-size:14px}
+
+  /* Numbers */
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:40px}
+  .stat{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:22px;
+    text-align:center;
+  }
+  .stat .n{font-size:34px;font-weight:800;letter-spacing:-0.02em;color:var(--accent)}
+  .stat .lab{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
+
+  /* Curriculum */
+  .module{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:24px;margin-bottom:14px;display:flex;gap:24px;align-items:flex-start;
+  }
+  .module .num{
+    background:var(--panel2);color:var(--accent);font-weight:800;font-size:20px;
+    width:48px;height:48px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .module .body{flex:1}
+  .module h3{font-size:18px;margin-bottom:4px}
+  .module .meta{font-size:12px;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+  .module ul{list-style:none;padding:0;margin-top:10px}
+  .module li{padding:4px 0 4px 22px;position:relative;color:var(--muted);font-size:14px}
+  .module li::before{
+    content:"✓";position:absolute;left:0;color:var(--accent);font-weight:700;
+  }
+
+  /* What you get */
+  .deliverables{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:36px}
+  .deliverable{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:24px;
+  }
+  .deliverable .icon{font-size:28px;margin-bottom:10px}
+  .deliverable h3{font-size:16px;margin-bottom:6px}
+  .deliverable p{font-size:14px;color:var(--muted)}
+
+  /* Differentiation */
+  .compare{margin-top:36px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .compare-row{display:grid;grid-template-columns:2fr 1fr 1fr;border-bottom:1px solid var(--border)}
+  .compare-row:last-child{border-bottom:none}
+  .compare-row > div{padding:16px 20px}
+  .compare-head{background:var(--panel2);font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+  .compare-row .check{color:var(--accent);font-weight:700;text-align:center}
+  .compare-row .cross{color:var(--red);font-weight:700;text-align:center}
+
+  /* Pricing */
+  .price-card{
+    max-width:560px;margin:40px auto 0;background:var(--panel);border:2px solid var(--accent);
+    border-radius:14px;padding:36px;text-align:center;
+    box-shadow:0 0 40px rgba(63,185,80,0.15);
+  }
+  .price-card .price{font-size:64px;font-weight:800;letter-spacing:-0.03em;line-height:1}
+  .price-card .price small{font-size:24px;color:var(--muted);font-weight:500;margin-right:6px}
+  .price-card .compare-price{color:var(--muted);text-decoration:line-through;margin-top:6px}
+  .price-card .stripe{
+    background:var(--accent);color:#0a0e14;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.1em;padding:6px 12px;border-radius:999px;
+    display:inline-block;margin-bottom:18px;
+  }
+  .price-card ul{list-style:none;padding:0;margin:24px 0;text-align:left}
+  .price-card li{padding:8px 0 8px 28px;position:relative;color:var(--text)}
+  .price-card li::before{content:"✓";position:absolute;left:0;color:var(--accent);font-weight:800;font-size:18px}
+  .price-card .btn-primary{width:100%;padding:18px;font-size:17px;margin-top:8px}
+  .guarantee{
+    margin-top:18px;font-size:13px;color:var(--muted);
+  }
+
+  /* FAQ */
+  .faq{margin-top:36px;max-width:760px;margin-left:auto;margin-right:auto}
+  details{
+    background:var(--panel);border:1px solid var(--border);border-radius:8px;
+    padding:18px 22px;margin-bottom:10px;cursor:pointer;
+  }
+  details summary{
+    font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center;
+  }
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:"+";color:var(--muted);font-weight:400;font-size:22px}
+  details[open] summary::after{content:"−"}
+  details p{color:var(--muted);margin-top:12px;font-size:15px}
+
+  footer{padding:60px 0 40px;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:13px}
+  footer p{margin-top:10px;max-width:680px;margin-left:auto;margin-right:auto;font-size:12px}
+
+  @media (max-width:720px){
+    h1{font-size:38px}
+    h2{font-size:28px}
+    .stat-row,.problem-grid,.deliverables{grid-template-columns:1fr}
+    .module{flex-direction:column;gap:14px}
+    .compare-row{grid-template-columns:1.5fr 1fr 1fr}
+  }
+</style>
+</head>
+<body>
+
+<nav><div class="container row">
+  <div class="brand">Bulletproof<span class="dot">.</span>Algo</div>
+  <a href="#enroll">Enroll →</a>
+</div></nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="container">
+    <span class="pill"><span class="live-dot"></span>Live cohort opens Monday</span>
+    <h1>
+      Stop building <span class="strike">backtests</span><br>
+      Start building <span class="accent">trading bots that actually run.</span>
+    </h1>
+    <p class="sub">
+      The engineering they won't teach you on YouTube. A 4-week build-along where you ship
+      a production Alpaca bot — same architecture I run on my own paper account, every bug fix included.
+    </p>
+    <div class="cta-row">
+      <a href="#enroll" class="btn btn-primary">Enroll for $497 →</a>
+      <a href="#curriculum" class="btn btn-ghost">See the curriculum</a>
+    </div>
+    <div class="price-row">
+      <span class="strike">$997 regular</span> · <span class="now">$497 founding-cohort price</span> · 30-day refund
+    </div>
+  </div>
+</div>
+
+<!-- THE PROBLEM -->
+<section>
+  <div class="container">
+    <div class="label">Why most algo traders never go live</div>
+    <h2>The brutal gap between backtest and reality</h2>
+    <p class="lead">A 72% win-rate backtest means nothing if your bot dies on a network blip at 10:30 AM.
+       Most courses stop at "look at this equity curve." That's where the real work starts.</p>
+
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="x">✕</div>
+        <h3>Your laptop sleeps</h3>
+        <p>The Mac sleeps mid-session. Your bot lags 2 hours behind, takes zero trades, the day is dead. You don't know it happened until you check the dashboard.</p>
+      </div>
+      <div class="problem-card">
+        <div class="x">✕</div>
+        <h3>Alpaca returns empty bodies</h3>
+        <p>The cancel-order endpoint returns HTTP 204 (no body). Your `r.json()` crashes. The whole bot dies mid-trade with stops half-replaced.</p>
+      </div>
+      <div class="problem-card">
+        <div class="x">✕</div>
+        <h3>Network blips kill the day</h3>
+        <p>One urllib3 ConnectionError during a signal check and the whole process exits. You discover at 4pm that you never traded.</p>
+      </div>
+      <div class="problem-card">
+        <div class="x">✕</div>
+        <h3>Bracket orders that don't behave</h3>
+        <p>OPG orders silently expire. Stop legs go to "held" status, not "new." Your dashboard says no stop — except there is one, you're just querying wrong.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE PROOF -->
+<section>
+  <div class="container">
+    <div class="label">This isn't theory</div>
+    <h2>I run this on my own account. Every Monday.</h2>
+    <p class="lead">Every bug in this course is a bug I hit in production. Every fix is the fix I shipped.
+       I'll show you my live dashboard, my green days, my crash days, and the exact code that handles both.</p>
+
+    <div class="stat-row">
+      <div class="stat"><div class="n">72.1%</div><div class="lab">Backtest win rate</div></div>
+      <div class="stat"><div class="n">5.82</div><div class="lab">Profit factor</div></div>
+      <div class="stat"><div class="n">-1.7%</div><div class="lab">Max drawdown</div></div>
+      <div class="stat"><div class="n">6yr</div><div class="lab">Backtested data</div></div>
+    </div>
+    <p style="margin-top:30px;font-size:13px;color:var(--muted);text-align:center">
+      Backtest of the School Run v8b strategy (included in the course). Past performance ≠ future results.
+      Real-world execution typically 60–75% of backtest after slippage and missed fills.
+    </p>
+  </div>
+</section>
+
+<!-- WHAT YOU GET -->
+<section>
+  <div class="container">
+    <div class="label">Everything you get</div>
+    <h2>The complete production stack — yours to keep</h2>
+
+    <div class="deliverables">
+      <div class="deliverable">
+        <div class="icon">📦</div>
+        <h3>The full bot codebase</h3>
+        <p>school_run_live.py — the same hardened script I run. With every fix from 7 production bugs, fully commented.</p>
+      </div>
+      <div class="deliverable">
+        <div class="icon">📊</div>
+        <h3>The smart dashboard</h3>
+        <p>Flask + Chart.js single-file dashboard. Live positions, ATR trail state, closed trades, equity curve, system health.</p>
+      </div>
+      <div class="deliverable">
+        <div class="icon">🧪</div>
+        <h3>The backtest engine</h3>
+        <p>6 years of cleaned 15-min data for 19 symbols. Variant tester so you can swap entries, exits, filters and re-run in seconds.</p>
+      </div>
+      <div class="deliverable">
+        <div class="icon">📋</div>
+        <h3>The hardening playbook</h3>
+        <p>Every production bug I've hit, the symptom, root cause, and the patch. PDF reference you'll actually use.</p>
+      </div>
+      <div class="deliverable">
+        <div class="icon">🎬</div>
+        <h3>32 video lessons</h3>
+        <p>4 weeks, 8 lessons per week. Screen-recorded, no fluff. Watch in 15 hours. Build your bot in parallel.</p>
+      </div>
+      <div class="deliverable">
+        <div class="icon">💬</div>
+        <h3>Private community</h3>
+        <p>Discord for the cohort. I'm in there daily for 4 weeks. After that, lifetime access — alumni help each other.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CURRICULUM -->
+<section id="curriculum">
+  <div class="container">
+    <div class="label">The 4-week curriculum</div>
+    <h2>From empty Alpaca account to live bot — in 4 weeks</h2>
+
+    <div class="module">
+      <div class="num">1</div>
+      <div class="body">
+        <h3>Week 1 — The strategy that survives daylight</h3>
+        <div class="meta">8 lessons · ~3 hours · End of week: backtest your own strategy</div>
+        <p>Most strategies look amazing in backtest and die in real life. We'll dissect why — and build School Run v8b, an ORB strategy that survives 6 years of slippage, gaps, and regime shifts.</p>
+        <ul>
+          <li>Why "buy the breakout" usually fails (and what to do instead)</li>
+          <li>The 4 filters that turn a 55% strategy into a 72% strategy</li>
+          <li>Walk-forward validation that catches regime breaks</li>
+          <li>The give-back problem and how ATR trails solve it</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="module">
+      <div class="num">2</div>
+      <div class="body">
+        <h3>Week 2 — Going live without blowing up</h3>
+        <div class="meta">8 lessons · ~4 hours · End of week: bot running on Alpaca paper</div>
+        <p>This is the week most courses skip. Alpaca's API has 47 ways to ruin your day. We'll walk every one.</p>
+        <ul>
+          <li>Bracket orders, OCO legs, and the "held" status trap</li>
+          <li>Position sizing under PDT and margin constraints</li>
+          <li>Order routing, time-in-force pitfalls, OPG expiry</li>
+          <li>The retry/timeout/idempotency triangle every bot needs</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="module">
+      <div class="num">3</div>
+      <div class="body">
+        <h3>Week 3 — The dashboard that tells you the truth</h3>
+        <div class="meta">8 lessons · ~3 hours · End of week: full dashboard at localhost:8080</div>
+        <p>Account.unrealized_pl returns None. The activity log lies. Yesterday's equity isn't yesterday's equity. We'll build a dashboard that surfaces the truth, not the convenience fields.</p>
+        <ul>
+          <li>Reconstructing closed trades from raw fills (signed FIFO matching)</li>
+          <li>Computing real day P&L from last_equity (and why)</li>
+          <li>System health: process detection, log heartbeats, lag alerts</li>
+          <li>Charting intraday + multi-day equity in one continuous line</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="module">
+      <div class="num">4</div>
+      <div class="body">
+        <h3>Week 4 — Production hardening &amp; deployment</h3>
+        <div class="meta">8 lessons · ~4 hours · End of week: bot running 24/7 on a $4/mo cloud VM</div>
+        <p>Your laptop is not a server. The final week takes you to the cloud — Hetzner, systemd, Tailscale, the works. You'll deploy, recover from a simulated crash, and walk away.</p>
+        <ul>
+          <li>Provisioning a Hetzner VPS in 20 minutes</li>
+          <li>systemd services + timers that auto-restart on crash</li>
+          <li>Tailscale for private dashboard access (no public exposure)</li>
+          <li>The 11 production bugs and the patches that fix them — PDF playbook</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIFFERENTIATION -->
+<section>
+  <div class="container">
+    <div class="label">Why this is different</div>
+    <h2>Most algo courses sell you a backtest. This one sells you a bot.</h2>
+
+    <div class="compare">
+      <div class="compare-row compare-head">
+        <div>What you actually get</div>
+        <div>Typical $497 course</div>
+        <div>Bulletproof Algo</div>
+      </div>
+      <div class="compare-row">
+        <div>Backtested strategy with equity curve</div>
+        <div class="check">✓</div>
+        <div class="check">✓</div>
+      </div>
+      <div class="compare-row">
+        <div>Working live code on Alpaca</div>
+        <div class="cross">✕</div>
+        <div class="check">✓</div>
+      </div>
+      <div class="compare-row">
+        <div>Live dashboard with positions &amp; closed trades</div>
+        <div class="cross">✕</div>
+        <div class="check">✓</div>
+      </div>
+      <div class="compare-row">
+        <div>Production bug playbook (real bugs, real fixes)</div>
+        <div class="cross">✕</div>
+        <div class="check">✓</div>
+      </div>
+      <div class="compare-row">
+        <div>Cloud deployment walkthrough (systemd / Tailscale)</div>
+        <div class="cross">✕</div>
+        <div class="check">✓</div>
+      </div>
+      <div class="compare-row">
+        <div>Instructor runs the bot on their own account, publicly</div>
+        <div class="cross">✕</div>
+        <div class="check">✓</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="enroll">
+  <div class="container">
+    <div class="label" style="text-align:center">Enroll — founding cohort</div>
+    <h2 style="text-align:center">One time. Yours forever.</h2>
+    <p class="lead" style="text-align:center;margin:0 auto">No subscription. No upsell. You buy it once and own everything — code, data, dashboard, future updates.</p>
+
+    <div class="price-card">
+      <span class="stripe">Founding cohort · 47 seats left</span>
+      <div class="price"><small>$</small>497</div>
+      <div class="compare-price">$997 after launch</div>
+      <ul>
+        <li>4 weeks of structured lessons (32 videos, 14 hours)</li>
+        <li>School Run v8b — fully commented live bot code</li>
+        <li>Smart dashboard with all 7 production fixes</li>
+        <li>6 years of 15-min data for 19 symbols</li>
+        <li>Production bug playbook (PDF)</li>
+        <li>Cloud deployment guide (Hetzner + systemd + Tailscale)</li>
+        <li>Private Discord — I'm in there daily for 4 weeks</li>
+        <li>Lifetime updates as I add new strategies</li>
+      </ul>
+      <a href="#" class="btn btn-primary">Enroll for $497 →</a>
+      <div class="guarantee">🛡️ 30-day money-back guarantee. Ship a working bot or refund — no questions.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section>
+  <div class="container">
+    <div class="label" style="text-align:center">Questions</div>
+    <h2 style="text-align:center">Honest answers</h2>
+
+    <div class="faq">
+      <details>
+        <summary>Do I need to be a programmer?</summary>
+        <p>You need to be able to run a Python script and use a terminal. If you've ever installed a Python package with pip, you're qualified. If you've never written code, this isn't for you — try a "no-code" tool first.</p>
+      </details>
+      <details>
+        <summary>Will this make me money?</summary>
+        <p>Maybe. Maybe not. The strategy has a 72% backtest win rate over 6 years; my live paper performance has been mixed (we just finished a +$248 week and a flat week). Real-world performance is typically 60–75% of backtest. Anyone promising guaranteed returns is lying. I'm teaching you to build the engine — what you do with it is up to you.</p>
+      </details>
+      <details>
+        <summary>Do I need a $25K account?</summary>
+        <p>For real money, yes — under $25K you hit PDT limits that skip most signals and cripple returns. For learning, no — Alpaca paper accounts are free and unlimited. Build it on paper first. Move to real money only when you've seen 60+ days of live behavior.</p>
+      </details>
+      <details>
+        <summary>Why $497? Why not $97 or $1997?</summary>
+        <p>$97 attracts people who won't finish. $1997 prices out the people I actually want to teach — devs and quants who like building things. $497 sits where the real work meets the real budget.</p>
+      </details>
+      <details>
+        <summary>Is this regulated / are you licensed?</summary>
+        <p>No. I'm not an investment adviser. I'm a builder teaching other builders how to build. The course teaches engineering, not financial advice. The strategies are examples — you choose what to run, how to size it, when to stop.</p>
+      </details>
+      <details>
+        <summary>What if it doesn't work for me?</summary>
+        <p>30-day money-back guarantee. Email me, refund processed. I'd rather you not be the customer who hates me. No fine print.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="brand">Bulletproof<span class="dot" style="color:var(--accent)">.</span>Algo</div>
+    <p>Independent algo trading education. Not investment advice. Past performance does not guarantee future results.
+       Trading involves risk of loss. Backtests are not promises. You are responsible for your own decisions.</p>
+    <p style="margin-top:18px">© 2026 · Built by someone who runs the bot every Monday.</p>
+  </div>
+</footer>
+
+</body>
+</html>
